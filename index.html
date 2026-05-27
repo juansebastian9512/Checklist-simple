@@ -183,11 +183,11 @@
       </div>
       
       <nav class="flex-grow flex flex-col gap-2 overflow-y-auto">
-        <a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg transition-transform active:scale-95 duration-150" href="#">
+        <a id="nav-dashboard" onclick="switchView('dashboard')" class="cursor-pointer flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg transition-transform active:scale-95 duration-150">
           <span class="material-symbols-outlined">dashboard</span>
           <span class="font-label-md text-label-md">Dashboard</span>
         </a>
-        <a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-150" href="#">
+        <a id="nav-mytasks" onclick="switchView('mytasks')" class="cursor-pointer flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-150">
           <span class="material-symbols-outlined">assignment_turned_in</span>
           <span class="font-label-md text-label-md">Mis Tareas</span>
         </a>
@@ -334,6 +334,73 @@
         </div>
       </main>
 
+      <!-- Mis Tareas Canvas -->
+      <main id="mytasks-container" class="hidden overflow-y-auto p-lg flex-grow" style="height: calc(100vh - 64px);">
+        <div class="max-w-6xl mx-auto flex flex-col gap-6">
+          
+          <!-- Header of Mis Tareas view -->
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-outline-variant pb-4">
+            <div>
+              <h2 class="font-headline-lg text-headline-lg text-primary font-bold">Mis Tareas</h2>
+              <p class="text-label-md text-on-surface-variant">Visualiza y gestiona tus tareas pendientes y en progreso, y revisa el historial.</p>
+            </div>
+            <!-- Quick actions -->
+            <div class="flex items-center gap-3">
+              <button onclick="openCreateModal('pendiente')" class="bg-primary-container text-on-primary-container font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 hover:opacity-90 transition-all text-label-md">
+                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                Nueva Tarea
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Layout Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            
+            <!-- Active Tasks List -->
+            <div class="lg:col-span-2 flex flex-col gap-6">
+              
+              <!-- Tab indicators -->
+              <div class="flex border-b border-outline-variant gap-4">
+                <button id="mytasks-tab-all" onclick="switchMyTasksTab('all')" class="pb-3 text-label-md font-bold border-b-2 border-primary text-primary transition-all">
+                  Todas las Activas
+                </button>
+                <button id="mytasks-tab-pendiente" onclick="switchMyTasksTab('pendiente')" class="pb-3 text-label-md font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all">
+                  Pendientes
+                </button>
+                <button id="mytasks-tab-en_proceso" onclick="switchMyTasksTab('en_proceso')" class="pb-3 text-label-md font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all">
+                  En Progreso
+                </button>
+              </div>
+
+              <!-- List container -->
+              <div id="mytasks-active-list" class="flex flex-col gap-3">
+                <!-- Injected active tasks -->
+              </div>
+            </div>
+
+            <!-- History Column -->
+            <div class="bg-surface-container-low border border-outline-variant rounded-2xl p-5 flex flex-col gap-4">
+              <div class="flex justify-between items-center pb-2 border-b border-outline-variant">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-tertiary">history</span>
+                  <h3 class="font-body-lg text-body-lg font-bold text-on-surface">Historial</h3>
+                </div>
+                <button onclick="clearHistory()" id="clear-history-btn" class="text-xs text-on-surface-variant hover:text-error hover:bg-error-container/20 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 font-semibold">
+                  <span class="material-symbols-outlined text-[14px]">delete</span>
+                  Vaciar
+                </button>
+              </div>
+
+              <!-- History list container -->
+              <div id="mytasks-history-list" class="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
+                <!-- Injected history items -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+
     </div>
   </div>
 
@@ -423,6 +490,13 @@
     /** @type {Task[]} Listado de todas las tareas */
     let tasks = [];
     
+    /** @type {Task[]} Listado de tareas en el historial (completadas y eliminadas) */
+    let historyTasks = [];
+    
+    // View state
+    let currentView = 'dashboard'; // 'dashboard' | 'mytasks'
+    let myTasksTab = 'all'; // 'all' | 'pendiente' | 'en_proceso'
+    
     // Tracks current search term
     let currentSearchQuery = '';
     
@@ -464,9 +538,14 @@
           status: t.status === 'terminada' || t.status === 'completada' ? 'terminada' : (t.status === 'en_proceso' ? 'en_proceso' : 'pendiente'),
           createdAt: t.createdAt || Date.now()
         }));
+
+        // Cargar historial
+        const storedHistory = localStorage.getItem('taskflow_history');
+        historyTasks = storedHistory ? JSON.parse(storedHistory) : [];
       } catch (e) {
         console.error('Error cargando datos de LocalStorage. Se usarán datos por defecto.', e);
         tasks = getDemoTasks();
+        historyTasks = [];
       }
     }
 
@@ -476,6 +555,7 @@
     function saveTasks() {
       try {
         localStorage.setItem('taskflow_tasks', JSON.stringify(tasks));
+        localStorage.setItem('taskflow_history', JSON.stringify(historyTasks));
       } catch (e) {
         console.error('No se pudo guardar la lista de tareas en LocalStorage.', e);
       }
@@ -522,6 +602,23 @@
      * Agrega una nueva tarea a la lista.
      * @param {string} text - Contenido de la tarea.
      */
+    /**
+     * Agrega una tarea al historial de completadas y eliminadas.
+     * @param {Task} task - Tarea completada.
+     */
+    function addToHistory(task) {
+      const historyItem = {
+        ...task,
+        deletedAt: Date.now()
+      };
+      historyTasks.unshift(historyItem);
+      saveTasks();
+    }
+
+    /**
+     * Agrega una nueva tarea a la lista.
+     * @param {string} text - Contenido de la tarea.
+     */
     function addTask(text) {
       const trimmedText = text.trim();
       if (!trimmedText) return;
@@ -539,18 +636,25 @@
       tasks.unshift(newTask);
       saveTasks();
       incrementActionCounter();
-      render();
+      renderActiveView();
     }
 
     /**
      * Elimina una tarea por su ID.
+     * Si la tarea estaba completada, se archiva en el historial.
      * @param {string} id - El identificador único de la tarea.
      */
     function deleteTask(id) {
-      tasks = tasks.filter(task => task.id !== id);
-      saveTasks();
-      incrementActionCounter();
-      render();
+      const taskToDelete = tasks.find(t => t.id === id);
+      if (taskToDelete) {
+        if (taskToDelete.status === 'terminada') {
+          addToHistory(taskToDelete);
+        }
+        tasks = tasks.filter(task => task.id !== id);
+        saveTasks();
+        incrementActionCounter();
+        renderActiveView();
+      }
     }
 
     /**
@@ -568,7 +672,7 @@
 
       saveTasks();
       incrementActionCounter();
-      render();
+      renderActiveView();
     }
 
     /**
@@ -769,6 +873,372 @@
       return card;
     }
 
+    // =====================================================
+    // --- VIEW SWITCHING & ROUTING ---
+    // =====================================================
+
+    /**
+     * Cambia la vista principal entre "dashboard" y "mytasks".
+     * @param {'dashboard'|'mytasks'} view
+     */
+    function switchView(view) {
+      currentView = view;
+
+      const kanbanMain = document.querySelector('.kanban-container');
+      const mytasksMain = document.getElementById('mytasks-container');
+      const navDashboard = document.getElementById('nav-dashboard');
+      const navMytasks = document.getElementById('nav-mytasks');
+
+      const activeClass = ['bg-secondary-container', 'text-on-secondary-container', 'rounded-lg'];
+      const inactiveClass = ['text-on-surface-variant', 'hover:bg-surface-container-high', 'transition-colors'];
+
+      if (view === 'mytasks') {
+        kanbanMain.classList.add('hidden');
+        mytasksMain.classList.remove('hidden');
+        // Nav active states
+        navDashboard.classList.remove(...activeClass);
+        navDashboard.classList.add(...inactiveClass);
+        navMytasks.classList.add(...activeClass);
+        navMytasks.classList.remove(...inactiveClass);
+        renderMyTasks();
+      } else {
+        mytasksMain.classList.add('hidden');
+        kanbanMain.classList.remove('hidden');
+        // Nav active states
+        navMytasks.classList.remove(...activeClass);
+        navMytasks.classList.add(...inactiveClass);
+        navDashboard.classList.add(...activeClass);
+        navDashboard.classList.remove(...inactiveClass);
+        render();
+      }
+
+      // On mobile, close sidebar after navigation
+      if (window.innerWidth < 768) {
+        const sidebar = document.querySelector('aside');
+        sidebar.classList.add('-translate-x-full');
+      }
+    }
+
+    /**
+     * Renderiza la vista activa: dashboard o mis tareas.
+     */
+    function renderActiveView() {
+      if (currentView === 'mytasks') {
+        render();        // keep kanban data up to date
+        renderMyTasks(); // and update the Mis Tareas view
+      } else {
+        render();
+      }
+    }
+
+    // =====================================================
+    // --- MIS TAREAS TAB SWITCHING ---
+    // =====================================================
+
+    /**
+     * Cambia la pestaña activa dentro de "Mis Tareas".
+     * @param {'all'|'pendiente'|'en_proceso'} tab
+     */
+    function switchMyTasksTab(tab) {
+      myTasksTab = tab;
+
+      const tabs = ['all', 'pendiente', 'en_proceso'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`mytasks-tab-${t}`);
+        if (!btn) return;
+        if (t === tab) {
+          btn.className = 'pb-3 text-label-md font-bold border-b-2 border-primary text-primary transition-all';
+        } else {
+          btn.className = 'pb-3 text-label-md font-semibold border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all';
+        }
+      });
+
+      renderMyTasks();
+    }
+
+    // =====================================================
+    // --- MIS TAREAS RENDERING ---
+    // =====================================================
+
+    /**
+     * Renderiza la vista completa "Mis Tareas": lista de activas + historial.
+     */
+    function renderMyTasks() {
+      renderActiveTasks();
+      renderHistoryTasks();
+    }
+
+    /**
+     * Renderiza las tareas activas (pendiente + en_proceso) filtradas por pestaña.
+     */
+    function renderActiveTasks() {
+      const container = document.getElementById('mytasks-active-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      let filtered = tasks.filter(t => t.status !== 'terminada');
+      if (myTasksTab === 'pendiente') filtered = filtered.filter(t => t.status === 'pendiente');
+      if (myTasksTab === 'en_proceso') filtered = filtered.filter(t => t.status === 'en_proceso');
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-16 gap-3 opacity-40">
+            <span class="material-symbols-outlined text-[48px] text-on-surface-variant">check_circle</span>
+            <p class="text-label-md text-on-surface-variant font-semibold">No hay tareas en esta categoría</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(task => {
+        container.appendChild(createActiveTaskDOM(task));
+      });
+    }
+
+    /**
+     * Renderiza el historial de tareas completadas y eliminadas.
+     */
+    function renderHistoryTasks() {
+      const container = document.getElementById('mytasks-history-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (historyTasks.length === 0) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-10 gap-2 opacity-40">
+            <span class="material-symbols-outlined text-[36px] text-tertiary">history_toggle_off</span>
+            <p class="text-xs text-on-surface-variant font-semibold text-center">El historial está vacío.<br>Aquí aparecerán las tareas completadas que elimines.</p>
+          </div>
+        `;
+        return;
+      }
+
+      historyTasks.forEach(task => {
+        container.appendChild(createHistoryTaskDOM(task));
+      });
+    }
+
+    /**
+     * Crea el DOM de fila para una tarea activa en "Mis Tareas".
+     * @param {Task} task
+     * @returns {HTMLElement}
+     */
+    function createActiveTaskDOM(task) {
+      const priorityColors = {
+        urgente: { badge: 'bg-[#840011] text-[#ff8881]', accent: '#F24B4B' },
+        normal:  { badge: 'bg-secondary-container text-on-secondary-container', accent: '#c6bfff' },
+        baja:    { badge: 'bg-surface-container-highest text-on-surface-variant', accent: '#928ea1' }
+      };
+      const pColors = priorityColors[task.priority] || priorityColors.normal;
+      const priorityLabel = task.priority === 'urgente' ? 'Urgente' : task.priority === 'baja' ? 'Baja' : 'Normal';
+
+      const statusConfig = {
+        pendiente: {
+          label: 'Pendiente',
+          icon: 'radio_button_unchecked',
+          color: 'text-secondary',
+          nextStatus: 'en_proceso',
+          nextLabel: 'Mover a En Progreso'
+        },
+        en_proceso: {
+          label: 'En Progreso',
+          icon: 'pending',
+          color: 'text-primary',
+          nextStatus: 'terminada',
+          nextLabel: 'Marcar como Completado'
+        }
+      };
+      const sc = statusConfig[task.status] || statusConfig.pendiente;
+
+      let dateStr = '';
+      if (task.dueDate) {
+        const d = new Date(task.dueDate + 'T00:00:00');
+        dateStr = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+      }
+
+      const row = document.createElement('div');
+      row.className = 'group bg-surface-container border border-outline-variant rounded-xl p-4 flex items-start gap-4 hover:border-primary/40 hover:bg-surface-container-high transition-all duration-200';
+      row.style.cssText = 'animation: scaleIn 0.18s cubic-bezier(0.16,1,0.3,1) forwards;';
+      row.dataset.id = task.id;
+
+      row.innerHTML = `
+        <!-- Left accent bar -->
+        <div class="flex-shrink-0 flex flex-col items-center gap-2 pt-0.5">
+          <button
+            onclick="quickCompleteTask('${task.id}')"
+            title="Marcar como Completado"
+            class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+            style="border-color: ${pColors.accent};"
+          >
+            <span class="material-symbols-outlined text-[13px] opacity-0 group-hover:opacity-60 transition-opacity" style="color: ${pColors.accent};">check</span>
+          </button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-grow min-w-0 flex flex-col gap-1.5">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <h4 class="font-body-md text-body-md font-bold text-on-surface leading-tight">${escapeHTML(task.text)}</h4>
+            <span class="${pColors.badge} text-label-sm px-2 py-0.5 rounded font-semibold flex-shrink-0">${priorityLabel}</span>
+          </div>
+          ${task.description ? `<p class="text-xs text-on-surface-variant line-clamp-1">${escapeHTML(task.description)}</p>` : ''}
+          <div class="flex flex-wrap items-center gap-3 mt-1">
+            <!-- Status toggle -->
+            <button
+              onclick="cycleTaskStatus('${task.id}')"
+              class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-highest hover:bg-primary-container/40 transition-colors text-xs font-semibold ${sc.color}"
+              title="${sc.nextLabel}"
+            >
+              <span class="material-symbols-outlined text-[14px]">${sc.icon}</span>
+              ${sc.label}
+            </button>
+            ${dateStr ? `
+            <span class="flex items-center gap-1 text-xs text-on-surface-variant">
+              <span class="material-symbols-outlined text-[13px]">calendar_today</span>
+              ${dateStr}
+            </span>` : ''}
+          </div>
+        </div>
+
+        <!-- Action buttons (visible on hover) -->
+        <div class="flex-shrink-0 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onclick="openEditModal('${task.id}', event)"
+            title="Editar tarea"
+            class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            <span class="material-symbols-outlined text-[15px]">edit</span>
+          </button>
+        </div>
+      `;
+
+      return row;
+    }
+
+    /**
+     * Crea el DOM de fila para una tarea en el historial.
+     * @param {Object} task - Tarea del historial (incluye deletedAt).
+     * @returns {HTMLElement}
+     */
+    function createHistoryTaskDOM(task) {
+      const deletedDate = task.deletedAt
+        ? new Date(task.deletedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : 'Fecha desconocida';
+
+      const priorityLabel = task.priority === 'urgente' ? 'Urgente' : task.priority === 'baja' ? 'Baja' : 'Normal';
+      const priorityBadgeClass = task.priority === 'urgente'
+        ? 'bg-[#840011]/30 text-[#ffb3ae]'
+        : task.priority === 'baja'
+        ? 'bg-surface-container-highest/50 text-on-surface-variant'
+        : 'bg-secondary-container/30 text-secondary';
+
+      const row = document.createElement('div');
+      row.className = 'group bg-surface-container-lowest/60 border border-outline-variant/40 rounded-lg p-3 flex flex-col gap-2 hover:border-tertiary/30 transition-all duration-200';
+      row.style.cssText = 'animation: scaleIn 0.18s cubic-bezier(0.16,1,0.3,1) forwards;';
+      row.dataset.historyId = task.id;
+
+      row.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-xs font-bold text-on-surface-variant line-through line-clamp-2 leading-snug flex-grow">${escapeHTML(task.text)}</p>
+          <span class="${priorityBadgeClass} text-[10px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0">${priorityLabel}</span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="flex items-center gap-1 text-[10px] text-tertiary/70 font-mono">
+            <span class="material-symbols-outlined text-[11px]">schedule</span>
+            ${deletedDate}
+          </span>
+          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onclick="restoreTask('${task.id}')"
+              title="Restaurar tarea"
+              class="flex items-center gap-1 text-[10px] font-bold text-primary hover:bg-primary-container/20 px-2 py-1 rounded transition-colors"
+            >
+              <span class="material-symbols-outlined text-[12px]">restore</span>
+              Restaurar
+            </button>
+            <button
+              onclick="deleteHistoryTaskPermanent('${task.id}')"
+              title="Eliminar permanentemente"
+              class="w-6 h-6 flex items-center justify-center text-on-surface-variant/50 hover:text-error hover:bg-error-container/20 rounded transition-colors"
+            >
+              <span class="material-symbols-outlined text-[13px]">delete_forever</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      return row;
+    }
+
+    // =====================================================
+    // --- HISTORY ACTIONS ---
+    // =====================================================
+
+    /**
+     * Marca rápidamente una tarea como completada desde la vista "Mis Tareas".
+     * @param {string} id
+     */
+    function quickCompleteTask(id) {
+      updateTaskStatus(id, 'terminada');
+    }
+
+    /**
+     * Cicla el estado de una tarea: pendiente -> en_proceso -> pendiente.
+     * (no llega a terminada - para eso está el checkbox)
+     * @param {string} id
+     */
+    function cycleTaskStatus(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      const next = task.status === 'pendiente' ? 'en_proceso' : 'pendiente';
+      updateTaskStatus(id, next);
+    }
+
+    /**
+     * Restaura una tarea del historial al tablero principal (como completada).
+     * @param {string} id
+     */
+    function restoreTask(id) {
+      const histTask = historyTasks.find(t => t.id === id);
+      if (!histTask) return;
+
+      const restored = { ...histTask };
+      delete restored.deletedAt;
+      restored.status = 'terminada'; // se restaura como completada
+
+      tasks.unshift(restored);
+      historyTasks = historyTasks.filter(t => t.id !== id);
+      saveTasks();
+      renderActiveView();
+    }
+
+    /**
+     * Elimina permanentemente una tarea del historial.
+     * @param {string} id
+     */
+    function deleteHistoryTaskPermanent(id) {
+      historyTasks = historyTasks.filter(t => t.id !== id);
+      saveTasks();
+      renderMyTasks();
+    }
+
+    /**
+     * Vacía completamente el historial de tareas.
+     */
+    function clearHistory() {
+      if (historyTasks.length === 0) {
+        alert('El historial ya está vacío.');
+        return;
+      }
+      if (confirm(`¿Vaciar el historial? Se eliminarán permanentemente ${historyTasks.length} tarea(s).`)) {
+        historyTasks = [];
+        saveTasks();
+        renderMyTasks();
+      }
+    }
+
+    // =====================================================
+    // =====================================================
+
     /**
      * Renderiza el listado de tareas en sus respectivas columnas.
      */
@@ -948,7 +1418,7 @@
       saveTasks();
       incrementActionCounter();
       closeModal();
-      render();
+      renderActiveView();
     }
 
     function handleModalDelete() {
@@ -964,7 +1434,7 @@
     // --- Search Logic ---
     function handleSearch() {
       currentSearchQuery = searchInput.value;
-      render();
+      renderActiveView();
     }
 
     // --- Clear Completed Logic ---
@@ -976,10 +1446,19 @@
       }
       
       if (confirm(`¿Estás seguro de que deseas eliminar las ${completedTasks.length} tareas completadas?`)) {
+        // Mover todas al historial
+        completedTasks.forEach(task => {
+          const historyItem = {
+            ...task,
+            deletedAt: Date.now()
+          };
+          historyTasks.unshift(historyItem);
+        });
+        
         tasks = tasks.filter(t => t.status !== 'terminada');
         saveTasks();
         incrementActionCounter();
-        render();
+        renderActiveView();
       }
     }
 
@@ -1056,7 +1535,7 @@
         task.status = newStatus;
         saveTasks();
         incrementActionCounter();
-        render();
+        renderActiveView();
       }
     }
 
@@ -1080,7 +1559,7 @@
     // --- App Initialization ---
     document.addEventListener('DOMContentLoaded', () => {
       loadTasks();
-      render();
+      renderActiveView();
       
       // Default mobile layout settings
       if (window.innerWidth < 768) {
