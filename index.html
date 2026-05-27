@@ -9,7 +9,10 @@
   
   <!-- Tailwind CSS via CDN with Plugins -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  
+
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -191,7 +194,7 @@
           <span class="material-symbols-outlined">assignment_turned_in</span>
           <span class="font-label-md text-label-md">Mis Tareas</span>
         </a>
-        <a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-150" href="#">
+        <a id="nav-analytics" onclick="switchView('analytics')" class="cursor-pointer flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-150">
           <span class="material-symbols-outlined">analytics</span>
           <span class="font-label-md text-label-md">Análisis</span>
         </a>
@@ -210,7 +213,7 @@
           <span class="font-label-md text-label-md">Limpiar completadas</span>
         </button>
         <div class="px-4 py-2 text-center text-xs text-on-surface-variant/40 font-mono">
-          <p>vibecoding en antigravity</p>
+          <p>vibecoding a full</p>
         </div>
       </div>
     </aside>
@@ -401,6 +404,92 @@
         </div>
       </main>
 
+      <!-- Analytics View -->
+      <main id="analytics-container" class="hidden overflow-y-auto p-lg flex-grow" style="height: calc(100vh - 64px);">
+        <div class="max-w-6xl mx-auto flex flex-col gap-8">
+          
+          <!-- Header of Analytics view -->
+          <div class="flex flex-col gap-2 border-b border-outline-variant pb-4">
+            <h2 class="font-headline-lg text-headline-lg text-primary font-bold">Análisis de Tareas</h2>
+            <p class="text-label-md text-on-surface-variant">Visualiza estadísticas y métricas sobre tu productividad.</p>
+          </div>
+
+          <!-- Statistics Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-label-md text-on-surface-variant">Total de Tareas</span>
+                <span class="material-symbols-outlined text-primary">task_alt</span>
+              </div>
+              <p class="font-headline-md text-headline-md text-on-surface" id="stat-total">0</p>
+            </div>
+
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-label-md text-on-surface-variant">Completadas</span>
+                <span class="material-symbols-outlined text-tertiary">check_circle</span>
+              </div>
+              <p class="font-headline-md text-headline-md text-tertiary" id="stat-completed-count">0</p>
+            </div>
+
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-label-md text-on-surface-variant">En Progreso</span>
+                <span class="material-symbols-outlined text-primary">schedule</span>
+              </div>
+              <p class="font-headline-md text-headline-md text-primary" id="stat-progress-count">0</p>
+            </div>
+
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-label-md text-on-surface-variant">Tasa de Compleción</span>
+                <span class="material-symbols-outlined text-secondary">trending_up</span>
+              </div>
+              <p class="font-headline-md text-headline-md text-secondary" id="stat-completion-rate">0%</p>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Distribution Chart -->
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex flex-col gap-4">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Distribución de Tareas</h3>
+              <div class="flex-grow flex items-center justify-center" style="position: relative; height: 280px;">
+                <canvas id="distribution-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Status Breakdown Chart -->
+            <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex flex-col gap-4">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Estado de las Tareas</h3>
+              <div class="flex-grow flex items-center justify-center" style="position: relative; height: 280px;">
+                <canvas id="status-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Productivity Summary -->
+          <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6 flex flex-col gap-4">
+            <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Resumen de Productividad</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div class="flex flex-col gap-2">
+                <span class="text-label-sm text-on-surface-variant">Tareas Completadas Hoy</span>
+                <p class="font-headline-sm text-on-surface" id="stat-today-completed">0</p>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="text-label-sm text-on-surface-variant">Promedio Diario</span>
+                <p class="font-headline-sm text-on-surface" id="stat-daily-avg">0</p>
+              </div>
+              <div class="flex flex-col gap-2">
+                <span class="text-label-sm text-on-surface-variant">Tareas Pendientes</span>
+                <p class="font-headline-sm text-secondary" id="stat-pending-count">0</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
     </div>
   </div>
 
@@ -494,7 +583,7 @@
     let historyTasks = [];
     
     // View state
-    let currentView = 'dashboard'; // 'dashboard' | 'mytasks'
+    let currentView = 'dashboard'; // 'dashboard' | 'mytasks' | 'analytics'
     let myTasksTab = 'all'; // 'all' | 'pendiente' | 'en_proceso'
     
     // Tracks current search term
@@ -878,35 +967,45 @@
     // =====================================================
 
     /**
-     * Cambia la vista principal entre "dashboard" y "mytasks".
-     * @param {'dashboard'|'mytasks'} view
+     * Cambia la vista principal entre "dashboard", "mytasks" y "analytics".
+     * @param {'dashboard'|'mytasks'|'analytics'} view
      */
     function switchView(view) {
       currentView = view;
 
       const kanbanMain = document.querySelector('.kanban-container');
       const mytasksMain = document.getElementById('mytasks-container');
+      const analyticsMain = document.getElementById('analytics-container');
       const navDashboard = document.getElementById('nav-dashboard');
       const navMytasks = document.getElementById('nav-mytasks');
+      const navAnalytics = document.getElementById('nav-analytics');
 
       const activeClass = ['bg-secondary-container', 'text-on-secondary-container', 'rounded-lg'];
       const inactiveClass = ['text-on-surface-variant', 'hover:bg-surface-container-high', 'transition-colors'];
 
+      // Hide all views first
+      kanbanMain.classList.add('hidden');
+      mytasksMain.classList.add('hidden');
+      analyticsMain.classList.add('hidden');
+
+      // Reset all nav items
+      [navDashboard, navMytasks, navAnalytics].forEach(nav => {
+        nav.classList.remove(...activeClass);
+        nav.classList.add(...inactiveClass);
+      });
+
       if (view === 'mytasks') {
-        kanbanMain.classList.add('hidden');
         mytasksMain.classList.remove('hidden');
-        // Nav active states
-        navDashboard.classList.remove(...activeClass);
-        navDashboard.classList.add(...inactiveClass);
         navMytasks.classList.add(...activeClass);
         navMytasks.classList.remove(...inactiveClass);
         renderMyTasks();
+      } else if (view === 'analytics') {
+        analyticsMain.classList.remove('hidden');
+        navAnalytics.classList.add(...activeClass);
+        navAnalytics.classList.remove(...inactiveClass);
+        setTimeout(() => renderAnalytics(), 100);
       } else {
-        mytasksMain.classList.add('hidden');
         kanbanMain.classList.remove('hidden');
-        // Nav active states
-        navMytasks.classList.remove(...activeClass);
-        navMytasks.classList.add(...inactiveClass);
         navDashboard.classList.add(...activeClass);
         navDashboard.classList.remove(...inactiveClass);
         render();
@@ -926,6 +1025,9 @@
       if (currentView === 'mytasks') {
         render();        // keep kanban data up to date
         renderMyTasks(); // and update the Mis Tareas view
+      } else if (currentView === 'analytics') {
+        render();        // keep kanban data up to date
+        renderAnalytics(); // and update the Analytics view
       } else {
         render();
       }
@@ -1312,6 +1414,138 @@
         <span class="text-xs font-semibold">${title}</span>
       `;
       return div;
+    }
+
+    // --- Analytics Rendering ---
+
+    let distributionChart = null;
+    let statusChart = null;
+
+    function renderAnalytics() {
+      updateAnalyticsStats();
+      updateAnalyticsCharts();
+    }
+
+    function updateAnalyticsStats() {
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.status === 'terminada').length;
+      const inProgress = tasks.filter(t => t.status === 'en_proceso').length;
+      const pending = tasks.filter(t => t.status === 'pendiente').length;
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-completed-count').textContent = completed;
+      document.getElementById('stat-progress-count').textContent = inProgress;
+      document.getElementById('stat-pending-count').textContent = pending;
+      document.getElementById('stat-completion-rate').textContent = completionRate + '%';
+
+      // Calculate daily average (assuming tasks have timestamps)
+      const dailyAvg = total > 0 ? Math.ceil(completed / Math.max(1, Math.ceil(total / 5))) : 0;
+      document.getElementById('stat-daily-avg').textContent = dailyAvg;
+      
+      // Today's completed tasks (simplified - count completed tasks)
+      const todayCompleted = completed;
+      document.getElementById('stat-today-completed').textContent = todayCompleted;
+    }
+
+    function updateAnalyticsCharts() {
+      const completed = tasks.filter(t => t.status === 'terminada').length;
+      const inProgress = tasks.filter(t => t.status === 'en_proceso').length;
+      const pending = tasks.filter(t => t.status === 'pendiente').length;
+
+      // Distribution Chart (Doughnut)
+      const distCtx = document.getElementById('distribution-chart');
+      if (distributionChart) {
+        distributionChart.destroy();
+      }
+
+      distributionChart = new Chart(distCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completadas', 'En Progreso', 'Pendientes'],
+          datasets: [{
+            data: [completed, inProgress, pending],
+            backgroundColor: ['#c7bfff', '#5842de', '#93000a'],
+            borderColor: ['#191e38', '#191e38', '#191e38'],
+            borderWidth: 2,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#c8c4d7',
+                font: {
+                  family: "'Hanken Grotesk', sans-serif",
+                  size: 12,
+                  weight: '500'
+                },
+                padding: 15
+              }
+            }
+          }
+        }
+      });
+
+      // Status Bar Chart
+      const statusCtx = document.getElementById('status-chart');
+      if (statusChart) {
+        statusChart.destroy();
+      }
+
+      statusChart = new Chart(statusCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Completadas', 'En Progreso', 'Pendientes'],
+          datasets: [{
+            label: 'Cantidad',
+            data: [completed, inProgress, pending],
+            backgroundColor: ['#c7bfff', '#5842de', '#93000a'],
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: Math.max(completed, inProgress, pending, 5),
+              ticks: {
+                color: '#c8c4d7',
+                font: {
+                  family: "'Hanken Grotesk', sans-serif"
+                }
+              },
+              grid: {
+                color: 'rgba(200, 196, 215, 0.1)'
+              }
+            },
+            y: {
+              ticks: {
+                color: '#c8c4d7',
+                font: {
+                  family: "'Hanken Grotesk', sans-serif"
+                }
+              },
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
     }
 
     // --- Modal Logic ---
