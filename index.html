@@ -198,6 +198,10 @@
           <span class="material-symbols-outlined">analytics</span>
           <span class="font-label-md text-label-md">Análisis</span>
         </a>
+        <a id="nav-agenda" onclick="switchView('agenda')" class="cursor-pointer flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-150">
+          <span class="material-symbols-outlined">calendar_month</span>
+          <span class="font-label-md text-label-md">Agenda</span>
+        </a>
         
         <div class="mt-8 px-2">
           <button onclick="openCreateModal('pendiente')" class="w-full bg-primary-container text-on-primary-container font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
@@ -490,6 +494,90 @@
         </div>
       </main>
 
+      <!-- Agenda Calendar View -->
+      <main id="agenda-container" class="hidden overflow-y-auto p-lg flex-grow" style="height: calc(100vh - 64px);">
+        <div class="max-w-7xl mx-auto flex flex-col gap-6">
+          
+          <!-- Header of Agenda view -->
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-outline-variant pb-4">
+            <div>
+              <h2 class="font-headline-lg text-headline-lg text-primary font-bold">Agenda</h2>
+              <p class="text-label-md text-on-surface-variant">Gestiona tareas repetitivas y visualiza tu calendario.</p>
+            </div>
+            <!-- Quick actions -->
+            <div class="flex items-center gap-3">
+              <button onclick="openRecurringModal()" class="bg-primary-container text-on-primary-container font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 hover:opacity-90 transition-all text-label-md">
+                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                Tarea Repetitiva
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Layout -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Calendar Column -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+              <!-- Month Navigation -->
+              <div class="flex justify-between items-center bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                <button onclick="prevMonth()" class="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
+                  <span class="material-symbols-outlined">chevron_left</span>
+                </button>
+                <h3 id="calendar-month-label" class="font-headline-md text-headline-md text-on-surface"></h3>
+                <button onclick="nextMonth()" class="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
+                  <span class="material-symbols-outlined">chevron_right</span>
+                </button>
+              </div>
+
+              <!-- Calendar Grid -->
+              <div class="bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                <!-- Days of week header -->
+                <div class="grid grid-cols-7 gap-2 mb-4">
+                  <div class="text-center text-label-sm text-on-surface-variant font-bold">Do</div>
+                  <div class="text-center text-label-sm text-on-surface-variant font-bold">Lu</div>
+                  <div class="text-center text-label-sm text-on-surface-variant font-bold">Ma</div>
+                  <div class="text-center text-label-sm text-on-surface-variant font-bold">Mi</div>
+                  <div class="text-center text-label-sm text-on-surface-variant font-bold">Ju</div>
+                  <div class="text-center text-label-sm text-on-surface-variant font-bold">Vi</div>
+                  <div class="text-center text-label-sm text-on-surface-variant font-bold">Sa</div>
+                </div>
+                
+                <!-- Calendar days -->
+                <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+                  <!-- Generated dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Recurring Tasks List -->
+            <div class="bg-surface-container-low border border-outline-variant rounded-2xl p-5 flex flex-col gap-4">
+              <div class="flex justify-between items-center pb-2 border-b border-outline-variant">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">repeat</span>
+                  <h3 class="font-body-lg text-body-lg font-bold text-on-surface">Tareas Repetitivas</h3>
+                </div>
+              </div>
+
+              <!-- Recurring tasks list -->
+              <div id="recurring-tasks-list" class="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-1">
+                <!-- Injected recurring tasks -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Today's Tasks Section -->
+          <div class="bg-surface-container-low border border-outline-variant rounded-2xl p-5 flex flex-col gap-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-outline-variant">
+              <span class="material-symbols-outlined text-tertiary">calendar_today</span>
+              <h3 class="font-body-lg text-body-lg font-bold text-on-surface">Tareas de Hoy</h3>
+            </div>
+            <div id="today-tasks-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <!-- Injected today's tasks -->
+            </div>
+          </div>
+        </div>
+      </main>
+
     </div>
   </div>
 
@@ -562,6 +650,111 @@
     </div>
   </div>
 
+  <!-- Create/Edit Recurring Task Modal -->
+  <div id="recurring-modal" class="fixed inset-0 bg-[#000000]/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface-container-low border border-outline-variant rounded-2xl w-full max-w-lg p-6 flex flex-col gap-4 shadow-2xl animate-scale-in">
+      <div class="flex justify-between items-center pb-2 border-b border-outline-variant">
+        <h3 id="recurring-modal-title" class="font-headline-md text-headline-md font-bold text-primary">Nueva Tarea Repetitiva</h3>
+        <button onclick="closeRecurringModal()" class="p-1.5 text-on-surface-variant hover:text-error hover:bg-surface-container-high rounded-lg transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form id="recurring-form" onsubmit="handleRecurringFormSubmit(event)" class="flex flex-col gap-4">
+        
+        <!-- Title input -->
+        <div class="flex flex-col gap-2">
+          <label class="text-label-md font-semibold text-on-surface">Nombre de la Tarea</label>
+          <input id="recurring-title-input" type="text" placeholder="Ej: Ir al gimnasio" maxlength="120" class="bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface focus:ring-2 focus:ring-primary focus:outline-none text-label-md"/>
+        </div>
+
+        <!-- Description -->
+        <div class="flex flex-col gap-2">
+          <label class="text-label-md font-semibold text-on-surface">Descripción</label>
+          <textarea id="recurring-description-input" placeholder="Detalles opcionales..." maxlength="500" class="bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface focus:ring-2 focus:ring-primary focus:outline-none text-label-md resize-none h-20"></textarea>
+        </div>
+
+        <!-- Recurrence Pattern -->
+        <div class="flex flex-col gap-2">
+          <label class="text-label-md font-semibold text-on-surface">Repetición</label>
+          <select id="recurring-pattern-select" onchange="updateRecurrenceUI()" class="bg-surface-container-highest border border-outline-variant rounded-lg px-3 py-2 text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+            <option value="daily">Diaria</option>
+            <option value="weekly">Semanal</option>
+            <option value="monthly">Mensual</option>
+            <option value="custom">Personalizada</option>
+          </select>
+        </div>
+
+        <!-- Days of week (for weekly) -->
+        <div id="weekly-options" class="hidden flex flex-col gap-2">
+          <label class="text-label-md font-semibold text-on-surface">Días de la Semana</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="0" class="weekly-day-checkbox" /> <span class="text-label-md">Domingo</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="1" class="weekly-day-checkbox" /> <span class="text-label-md">Lunes</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="2" class="weekly-day-checkbox" /> <span class="text-label-md">Martes</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="3" class="weekly-day-checkbox" /> <span class="text-label-md">Miércoles</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="4" class="weekly-day-checkbox" /> <span class="text-label-md">Jueves</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="5" class="weekly-day-checkbox" /> <span class="text-label-md">Viernes</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" value="6" class="weekly-day-checkbox" /> <span class="text-label-md">Sábado</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Custom interval -->
+        <div id="custom-options" class="hidden flex flex-col gap-2">
+          <label class="text-label-md font-semibold text-on-surface">Cada (días)</label>
+          <input id="recurring-interval-input" type="number" min="1" max="365" value="1" class="bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface focus:ring-2 focus:ring-primary focus:outline-none text-label-md"/>
+        </div>
+
+        <!-- Start Date -->
+        <div class="flex flex-col gap-2">
+          <label class="text-label-md font-semibold text-on-surface">Fecha de Inicio</label>
+          <input id="recurring-start-date" type="date" class="bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2.5 text-on-surface focus:ring-2 focus:ring-primary focus:outline-none text-label-md"/>
+        </div>
+
+        <!-- Priority -->
+        <div class="flex flex-col gap-2">
+          <label class="text-label-md font-semibold text-on-surface">Prioridad</label>
+          <select id="recurring-priority-select" class="bg-surface-container-highest border border-outline-variant rounded-lg px-3 py-2 text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+            <option value="baja">Baja</option>
+            <option value="normal">Normal</option>
+            <option value="urgente">Urgente</option>
+          </select>
+        </div>
+
+        <div class="flex justify-between items-center mt-4 pt-4 border-t border-outline-variant">
+          <button type="button" id="recurring-delete-btn" onclick="handleRecurringDelete()" class="bg-error-container/20 text-on-tertiary-container hover:bg-error-container/40 border border-error-container/30 transition-colors px-4 py-2.5 rounded-lg text-label-md font-bold hidden items-center gap-1.5">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+            Eliminar
+          </button>
+          <div id="recurring-delete-spacer" class="flex-grow"></div>
+          
+          <div class="flex gap-3">
+            <button type="button" onclick="closeRecurringModal()" class="border border-outline text-on-surface hover:bg-surface-container-highest transition-colors px-4 py-2.5 rounded-lg text-label-md font-bold">
+              Cancelar
+            </button>
+            <button type="submit" class="bg-[#c6bfff] text-[#29009f] font-bold px-5 py-2.5 rounded-lg text-label-md hover:opacity-90 transition-opacity">
+              Guardar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- JavaScript Application Logic -->
   <script>
     /**
@@ -582,8 +775,24 @@
     /** @type {Task[]} Listado de tareas en el historial (completadas y eliminadas) */
     let historyTasks = [];
     
+    /**
+     * @typedef {Object} RecurringTask
+     * @property {string} id - Identificador único
+     * @property {string} text - Título de la tarea
+     * @property {string} description - Descripción
+     * @property {'daily'|'weekly'|'monthly'|'custom'} pattern - Patrón de repetición
+     * @property {number[]} weekDays - Días de la semana (0-6) si es weekly
+     * @property {number} interval - Intervalo en días si es custom
+     * @property {string} startDate - Fecha de inicio (YYYY-MM-DD)
+     * @property {'baja'|'normal'|'urgente'} priority - Prioridad
+     * @property {number} createdAt - Marca de tiempo de creación
+     */
+    
+    /** @type {RecurringTask[]} Tareas repetitivas */
+    let recurringTasks = [];
+    
     // View state
-    let currentView = 'dashboard'; // 'dashboard' | 'mytasks' | 'analytics'
+    let currentView = 'dashboard'; // 'dashboard' | 'mytasks' | 'analytics' | 'agenda'
     let myTasksTab = 'all'; // 'all' | 'pendiente' | 'en_proceso'
     
     // Tracks current search term
@@ -591,6 +800,9 @@
     
     // Active mobile column tab
     let activeMobileTab = 'todas';
+    
+    // Agenda state - day selected in calendar
+    let selectedAgendaDate = null;
 
     // --- DOM Elements ---
     const searchInput = document.getElementById('search-input');
@@ -649,6 +861,94 @@
         console.error('No se pudo guardar la lista de tareas en LocalStorage.', e);
       }
     }
+
+    /**
+     * Carga las tareas repetitivas desde LocalStorage
+     */
+    function loadRecurringTasks() {
+      try {
+        const stored = localStorage.getItem('taskflow_recurring');
+        recurringTasks = stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error('Error cargando tareas repetitivas.', e);
+        recurringTasks = [];
+      }
+    }
+
+    /**
+     * Guarda tareas repetitivas en LocalStorage
+     */
+    function saveRecurringTasks() {
+      try {
+        localStorage.setItem('taskflow_recurring', JSON.stringify(recurringTasks));
+      } catch (e) {
+        console.error('No se pudo guardar tareas repetitivas.', e);
+      }
+    }
+
+    /**
+     * Genera instancias de tareas a partir de tareas repetitivas para una fecha
+     * @param {Date} date - Fecha para generar tareas
+     * @returns {Task[]} Array de tareas generadas
+     */
+    function generateTasksForDate(date) {
+      const generated = [];
+      const dayOfWeek = date.getDay();
+      const dateStr = date.toISOString().split('T')[0];
+
+      for (const recurring of recurringTasks) {
+        const startDate = new Date(recurring.startDate);
+        if (date < startDate) continue;
+
+        let shouldGenerate = false;
+
+        if (recurring.pattern === 'daily') {
+          shouldGenerate = true;
+        } else if (recurring.pattern === 'weekly') {
+          shouldGenerate = recurring.weekDays && recurring.weekDays.includes(dayOfWeek);
+        } else if (recurring.pattern === 'monthly') {
+          shouldGenerate = date.getDate() === startDate.getDate();
+        } else if (recurring.pattern === 'custom') {
+          const diffTime = Math.abs(date - startDate);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          shouldGenerate = diffDays % recurring.interval === 0;
+        }
+
+        if (shouldGenerate) {
+          generated.push({
+            id: 'recurring-' + recurring.id + '-' + dateStr,
+            text: recurring.text,
+            description: recurring.description,
+            priority: recurring.priority,
+            dueDate: dateStr,
+            status: 'pendiente',
+            createdAt: Date.now(),
+            recurringId: recurring.id
+          });
+        }
+      }
+
+      return generated;
+    }
+
+    /**
+     * Obtiene todas las tareas para una fecha específica (regulares + repetitivas)
+     */
+    function getTasksForDate(date) {
+      const dateStr = date.toISOString().split('T')[0];
+      const regularTasks = tasks.filter(t => t.dueDate === dateStr);
+      const generatedTasks = generateTasksForDate(date);
+      return [...regularTasks, ...generatedTasks];
+    }
+
+    /**
+     * Obtiene tareas de hoy
+     */
+    function getTodaysTasks() {
+      const today = new Date();
+      return getTasksForDate(today);
+    }
+
 
     /**
      * Genera tareas iniciales de demostración para una primera carga agradable.
@@ -976,9 +1276,11 @@
       const kanbanMain = document.querySelector('.kanban-container');
       const mytasksMain = document.getElementById('mytasks-container');
       const analyticsMain = document.getElementById('analytics-container');
+      const agendaMain = document.getElementById('agenda-container');
       const navDashboard = document.getElementById('nav-dashboard');
       const navMytasks = document.getElementById('nav-mytasks');
       const navAnalytics = document.getElementById('nav-analytics');
+      const navAgenda = document.getElementById('nav-agenda');
 
       const activeClass = ['bg-secondary-container', 'text-on-secondary-container', 'rounded-lg'];
       const inactiveClass = ['text-on-surface-variant', 'hover:bg-surface-container-high', 'transition-colors'];
@@ -987,9 +1289,10 @@
       kanbanMain.classList.add('hidden');
       mytasksMain.classList.add('hidden');
       analyticsMain.classList.add('hidden');
+      agendaMain.classList.add('hidden');
 
       // Reset all nav items
-      [navDashboard, navMytasks, navAnalytics].forEach(nav => {
+      [navDashboard, navMytasks, navAnalytics, navAgenda].forEach(nav => {
         nav.classList.remove(...activeClass);
         nav.classList.add(...inactiveClass);
       });
@@ -1004,6 +1307,11 @@
         navAnalytics.classList.add(...activeClass);
         navAnalytics.classList.remove(...inactiveClass);
         setTimeout(() => renderAnalytics(), 100);
+      } else if (view === 'agenda') {
+        agendaMain.classList.remove('hidden');
+        navAgenda.classList.add(...activeClass);
+        navAgenda.classList.remove(...inactiveClass);
+        renderAgenda();
       } else {
         kanbanMain.classList.remove('hidden');
         navDashboard.classList.add(...activeClass);
@@ -1028,6 +1336,9 @@
       } else if (currentView === 'analytics') {
         render();        // keep kanban data up to date
         renderAnalytics(); // and update the Analytics view
+      } else if (currentView === 'agenda') {
+        render();        // keep kanban data up to date
+        renderAgenda();  // and update the Agenda view
       } else {
         render();
       }
@@ -1416,6 +1727,182 @@
       return div;
     }
 
+    // --- Agenda/Calendar Rendering ---
+
+    let currentCalendarDate = new Date();
+
+    function renderAgenda() {
+      // Initialize selected date to today if not set
+      if (!selectedAgendaDate) {
+        selectedAgendaDate = new Date().toISOString().split('T')[0];
+      }
+      
+      renderCalendar();
+      renderRecurringTasksList();
+      renderTodaysTasks();
+    }
+
+    function renderCalendar() {
+      const year = currentCalendarDate.getFullYear();
+      const month = currentCalendarDate.getMonth();
+      
+      const monthLabel = currentCalendarDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+      document.getElementById('calendar-month-label').textContent = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+      
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      const startingDayOfWeek = firstDay.getDay();
+      
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+      
+      // Empty cells for days before month starts
+      for (let i = 0; i < startingDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'p-2 rounded-lg text-on-surface-variant/20';
+        grid.appendChild(emptyDay);
+      }
+      
+      // Days of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayTasks = getTasksForDate(date);
+        
+        const dayCell = document.createElement('div');
+        dayCell.className = 'p-2 rounded-lg border cursor-pointer transition-colors';
+        
+        // Highlight today
+        const today = new Date().toISOString().split('T')[0];
+        if (dateStr === today) {
+          dayCell.classList.add('border-primary', 'bg-primary-container');
+        } else if (dateStr === selectedAgendaDate) {
+          // Highlight selected day
+          dayCell.classList.add('border-secondary', 'bg-secondary-container', 'text-on-secondary-container');
+        } else {
+          dayCell.classList.add('border-outline-variant', 'hover:bg-surface-container-high');
+        }
+        
+        let dayHTML = `<div class="font-bold text-label-md">${day}</div>`;
+        
+        if (dayTasks.length > 0) {
+          dayHTML += `<div class="text-xs mt-1 opacity-70">${dayTasks.length} tarea${dayTasks.length !== 1 ? 's' : ''}</div>`;
+        }
+        
+        dayCell.innerHTML = dayHTML;
+        dayCell.onclick = () => highlightDayTasks(dateStr, dayTasks);
+        grid.appendChild(dayCell);
+      }
+    }
+
+    function highlightDayTasks(dateStr, dayTasks) {
+      // Save selected date
+      selectedAgendaDate = dateStr;
+      
+      // Re-render calendar to show selection
+      renderCalendar();
+      
+      // Render tasks for this date
+      renderTodaysTasks();
+      
+      // Scroll to tasks section
+      const todayTasksList = document.getElementById('today-tasks-list');
+      todayTasksList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderRecurringTasksList() {
+      const list = document.getElementById('recurring-tasks-list');
+      list.innerHTML = '';
+      
+      if (recurringTasks.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-8 text-on-surface-variant">
+            <span class="material-symbols-outlined block text-4xl mb-2 opacity-50">event_repeat</span>
+            <p class="text-label-md">No hay tareas repetitivas</p>
+            <p class="text-xs text-on-surface-variant/60">Crea una para comenzar</p>
+          </div>
+        `;
+        return;
+      }
+      
+      for (const recurring of recurringTasks) {
+        const item = document.createElement('div');
+        item.className = 'bg-surface-container-highest border border-outline-variant rounded-lg p-3 flex items-start justify-between gap-2 hover:border-primary transition-colors cursor-pointer group';
+        
+        let priorityColor = 'bg-secondary-container';
+        if (recurring.priority === 'urgente') {
+          priorityColor = 'bg-[#840011]';
+        } else if (recurring.priority === 'baja') {
+          priorityColor = 'bg-surface-container-highest';
+        }
+        
+        let patternLabel = 'Diaria';
+        if (recurring.pattern === 'weekly') patternLabel = 'Semanal';
+        else if (recurring.pattern === 'monthly') patternLabel = 'Mensual';
+        else if (recurring.pattern === 'custom') patternLabel = `Cada ${recurring.interval} días`;
+        
+        item.innerHTML = `
+          <div class="flex-grow min-w-0">
+            <p class="font-bold text-label-md text-on-surface truncate">${escapeHTML(recurring.text)}</p>
+            <p class="text-xs text-on-surface-variant mt-1">${patternLabel}</p>
+          </div>
+          <button onclick="openEditRecurringModal('${recurring.id}')" class="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-on-surface-variant hover:text-primary rounded-lg hover:bg-surface-container-high">
+            <span class="material-symbols-outlined text-[18px]">edit</span>
+          </button>
+        `;
+        
+        list.appendChild(item);
+      }
+    }
+
+    function renderTodaysTasks() {
+      const list = document.getElementById('today-tasks-list');
+      list.innerHTML = '';
+      
+      // Get date to display (selected or today)
+      const displayDate = selectedAgendaDate ? new Date(selectedAgendaDate) : new Date();
+      const displayTasks = getTasksForDate(displayDate);
+      
+      // Format date for display
+      const dateLabel = displayDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const dateCapitalized = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
+      
+      // Update heading with date
+      const headingDiv = document.querySelector('#today-tasks-list').previousElementSibling;
+      if (headingDiv) {
+        const h3 = headingDiv.querySelector('h3');
+        if (h3) {
+          h3.textContent = 'Tareas: ' + dateCapitalized;
+        }
+      }
+      
+      if (displayTasks.length === 0) {
+        list.innerHTML = `
+          <div class="col-span-full text-center py-8 text-on-surface-variant">
+            <span class="material-symbols-outlined block text-4xl mb-2 opacity-50">done_all</span>
+            <p class="text-label-md">No hay tareas para este día</p>
+          </div>
+        `;
+        return;
+      }
+      
+      for (const task of displayTasks) {
+        const card = createTaskCardDOM(task);
+        list.appendChild(card);
+      }
+    }
+
+    function prevMonth() {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+      renderCalendar();
+    }
+
+    function nextMonth() {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+      renderCalendar();
+    }
+
     // --- Analytics Rendering ---
 
     let distributionChart = null;
@@ -1608,6 +2095,152 @@
       modal.classList.remove('flex');
     }
 
+    function openRecurringModal() {
+      document.getElementById('recurring-modal-title').textContent = 'Nueva Tarea Repetitiva';
+      
+      document.getElementById('recurring-title-input').value = '';
+      document.getElementById('recurring-description-input').value = '';
+      document.getElementById('recurring-pattern-select').value = 'daily';
+      document.getElementById('recurring-priority-select').value = 'normal';
+      
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('recurring-start-date').value = today;
+      
+      document.getElementById('recurring-delete-btn').classList.add('hidden');
+      document.getElementById('recurring-delete-btn').classList.remove('flex');
+      document.getElementById('recurring-delete-spacer').classList.remove('hidden');
+      
+      updateRecurrenceUI();
+      
+      const modal = document.getElementById('recurring-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      
+      setTimeout(() => document.getElementById('recurring-title-input').focus(), 50);
+    }
+
+    function closeRecurringModal() {
+      const modal = document.getElementById('recurring-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openEditRecurringModal(recurringId) {
+      const recurring = recurringTasks.find(r => r.id === recurringId);
+      if (!recurring) return;
+
+      document.getElementById('recurring-modal-title').textContent = 'Editar Tarea Repetitiva';
+      
+      document.getElementById('recurring-title-input').value = recurring.text;
+      document.getElementById('recurring-description-input').value = recurring.description || '';
+      document.getElementById('recurring-pattern-select').value = recurring.pattern;
+      document.getElementById('recurring-priority-select').value = recurring.priority || 'normal';
+      document.getElementById('recurring-start-date').value = recurring.startDate;
+      
+      if (recurring.pattern === 'custom') {
+        document.getElementById('recurring-interval-input').value = recurring.interval || 1;
+      }
+      
+      if (recurring.pattern === 'weekly' && recurring.weekDays) {
+        const checkboxes = document.querySelectorAll('.weekly-day-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+        recurring.weekDays.forEach(day => {
+          document.querySelector(`.weekly-day-checkbox[value="${day}"]`).checked = true;
+        });
+      }
+      
+      document.getElementById('recurring-delete-btn').classList.remove('hidden');
+      document.getElementById('recurring-delete-btn').classList.add('flex');
+      document.getElementById('recurring-delete-spacer').classList.add('hidden');
+      
+      document.getElementById('recurring-form').dataset.id = recurringId;
+      
+      updateRecurrenceUI();
+      
+      const modal = document.getElementById('recurring-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function updateRecurrenceUI() {
+      const pattern = document.getElementById('recurring-pattern-select').value;
+      const weeklyOptions = document.getElementById('weekly-options');
+      const customOptions = document.getElementById('custom-options');
+      
+      weeklyOptions.classList.toggle('hidden', pattern !== 'weekly');
+      customOptions.classList.toggle('hidden', pattern !== 'custom');
+    }
+
+    function handleRecurringFormSubmit(event) {
+      event.preventDefault();
+      
+      const id = document.getElementById('recurring-form').dataset.id || '';
+      const text = document.getElementById('recurring-title-input').value.trim();
+      const description = document.getElementById('recurring-description-input').value.trim();
+      const pattern = document.getElementById('recurring-pattern-select').value;
+      const priority = document.getElementById('recurring-priority-select').value;
+      const startDate = document.getElementById('recurring-start-date').value;
+      
+      if (!text || !startDate) return;
+      
+      const weekDays = [];
+      if (pattern === 'weekly') {
+        document.querySelectorAll('.weekly-day-checkbox:checked').forEach(cb => {
+          weekDays.push(parseInt(cb.value));
+        });
+        if (weekDays.length === 0) {
+          alert('Selecciona al menos un día de la semana');
+          return;
+        }
+      }
+      
+      const interval = pattern === 'custom' ? parseInt(document.getElementById('recurring-interval-input').value) || 1 : 1;
+      
+      if (id) {
+        const recurring = recurringTasks.find(r => r.id === id);
+        if (recurring) {
+          recurring.text = text;
+          recurring.description = description;
+          recurring.pattern = pattern;
+          recurring.priority = priority;
+          recurring.startDate = startDate;
+          recurring.weekDays = weekDays;
+          recurring.interval = interval;
+        }
+      } else {
+        recurringTasks.push({
+          id: 'recurring-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+          text,
+          description,
+          pattern,
+          priority,
+          startDate,
+          weekDays,
+          interval,
+          createdAt: Date.now()
+        });
+      }
+      
+      saveRecurringTasks();
+      closeRecurringModal();
+      renderActiveView();
+      incrementActionCounter();
+    }
+
+    function handleRecurringDelete() {
+      const id = document.getElementById('recurring-form').dataset.id;
+      if (!id) return;
+      
+      if (confirm('¿Estás seguro de que quieres eliminar esta tarea repetitiva?')) {
+        recurringTasks = recurringTasks.filter(r => r.id !== id);
+        saveRecurringTasks();
+        closeRecurringModal();
+        renderActiveView();
+        incrementActionCounter();
+      }
+    }
+
+
     function handleModalSubmit(event) {
       event.preventDefault();
       
@@ -1793,6 +2426,7 @@
     // --- App Initialization ---
     document.addEventListener('DOMContentLoaded', () => {
       loadTasks();
+      loadRecurringTasks();
       renderActiveView();
       
       // Default mobile layout settings
